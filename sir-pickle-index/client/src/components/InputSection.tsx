@@ -36,7 +36,7 @@ const InputSection: React.FC<InputSectionProps> = memo(({
   const [query, setQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState(''); // Empty string means "All Content"
   const [isTyping, setIsTyping] = useState(false);
-  const typingTimeoutRef = useRef<number | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSearch = useCallback(() => {
     if (query.trim() && !isLoading) {
