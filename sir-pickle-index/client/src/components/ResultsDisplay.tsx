@@ -27,9 +27,26 @@ interface Citation {
   sourceIndex: number;
 }
 
+// Add interfaces for processed answer structure
+interface CitationPart {
+  type: 'text' | 'citation';
+  content: string;
+  sourceIndex?: number;
+}
+
+interface ProcessedAnswerField {
+  [key: string]: CitationPart[] | any;
+}
+
+interface ProcessedAnswer {
+  original: StructuredAnswer;
+  processed: ProcessedAnswerField;
+}
+
 interface RelatedSource {
   videoTitle: string;
   timestampLink: string;
+  timestampUrl: string;
   snippet: string;
   publishedDate: string;
   tags: string[];
@@ -41,6 +58,7 @@ interface RelatedSource {
 export interface AskResult {
   answerTimeMs: number;
   structuredAnswer: StructuredAnswer;
+  processedAnswer?: ProcessedAnswer; // Add processedAnswer to the interface
   citations: Citation[];
   relatedSources: RelatedSource[];
 }
@@ -48,6 +66,7 @@ export interface AskResult {
 export interface KeywordResultItem {
   videoTitle: string;
   timestampLink: string;
+  timestampUrl: string;
   snippet: string;
   publishedDate: string;
   tags: string[];
@@ -70,7 +89,31 @@ interface ResultsDisplayProps {
   appliedFilter?: string; // Added to show applied filter
 }
 
-// Helper function to render text with citations (basic implementation)
+// Helper function to render processed field with clickable citations
+const renderProcessedField = (fieldParts: CitationPart[], relatedSources: RelatedSource[]) => {
+  if (!fieldParts || !Array.isArray(fieldParts)) return null;
+
+  return fieldParts.map((part, index) => {
+    if (part.type === 'citation' && part.sourceIndex !== undefined && relatedSources[part.sourceIndex]) {
+      const source = relatedSources[part.sourceIndex];
+      return (
+        <a 
+          key={index} 
+          href={source.timestampUrl} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className={styles['citation-link']} 
+          title={`Jump to: ${source.videoTitle} at ${source.timestampLink}`}
+        >
+          {part.content}
+        </a>
+      );
+    }
+    return <React.Fragment key={index}>{part.content}</React.Fragment>;
+  });
+};
+
+// Helper function to render text with citations (basic implementation - fallback)
 const renderTextWithCitations = (text: string, citations: Citation[], relatedSources: RelatedSource[]) => {
   if (!text) return null;
 
@@ -84,11 +127,18 @@ const renderTextWithCitations = (text: string, citations: Citation[], relatedSou
       const citationId = parseInt(citationMatch[1], 10);
       const citationData = citations.find(c => c.id === citationId);
       if (citationData && relatedSources[citationData.sourceIndex]) {
-        // In a real app, clicking this could scroll to/highlight the source
+        const source = relatedSources[citationData.sourceIndex];
         return (
-          <span key={index} className={styles['citation-link']} title={`Source: ${relatedSources[citationData.sourceIndex].videoTitle}`}>
+          <a 
+            key={index} 
+            href={source.timestampUrl}
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={styles['citation-link']} 
+            title={`Jump to: ${source.videoTitle} at ${source.timestampLink}`}
+          >
             [{citationId}]
-          </span>
+          </a>
         );
       }
     }
@@ -156,7 +206,29 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   // --- ASK A QUESTION RESULTS ---
   if (searchMode === 'ask' && results && 'structuredAnswer' in results) {
     const askData = results as AskResult;
-    const { structuredAnswer, citations, relatedSources, answerTimeMs } = askData;
+    const { structuredAnswer, processedAnswer, citations, relatedSources, answerTimeMs } = askData;
+
+    // Debug logging
+    console.log('[ResultsDisplay] Received askData:', { 
+      hasProcessedAnswer: !!processedAnswer, 
+      citationsCount: citations?.length || 0,
+      relatedSourcesCount: relatedSources?.length || 0 
+    });
+    
+    if (processedAnswer) {
+      console.log('[ResultsDisplay] processedAnswer structure:', processedAnswer);
+    }
+
+    // Helper function to render a field, preferring processed data
+    const renderAnswerField = (fieldName: keyof StructuredAnswer, fieldValue: string) => {
+      if (processedAnswer && processedAnswer.processed[fieldName]) {
+        console.log(`[ResultsDisplay] Using processed data for field: ${fieldName}`, processedAnswer.processed[fieldName]);
+        return renderProcessedField(processedAnswer.processed[fieldName], relatedSources);
+      }
+      // Fallback to basic implementation
+      console.log(`[ResultsDisplay] Using fallback for field: ${fieldName}`);
+      return renderTextWithCitations(fieldValue, citations, relatedSources);
+    };
 
     return (
       <div className={`${styles['results-display-container']} ${styles['ask-result-container']}`}>
@@ -165,37 +237,37 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
         {structuredAnswer.introduction && (
           <div className={styles['structured-answer-section']}>
             <strong>Introduction</strong>
-            <p>{renderTextWithCitations(structuredAnswer.introduction, citations, relatedSources)}</p>
+            <p>{renderAnswerField('introduction', structuredAnswer.introduction)}</p>
           </div>
         )}
         {structuredAnswer.explanation && (
           <div className={styles['structured-answer-section']}>
             <strong>Explanation</strong>
-            <p>{renderTextWithCitations(structuredAnswer.explanation, citations, relatedSources)}</p>
+            <p>{renderAnswerField('explanation', structuredAnswer.explanation)}</p>
           </div>
         )}
         {structuredAnswer.examples && structuredAnswer.examples !== "No specific examples were found in the provided context." && (
           <div className={styles['structured-answer-section']}>
             <strong>Examples from the Sources</strong>
-            <p>{renderTextWithCitations(structuredAnswer.examples, citations, relatedSources)}</p>
+            <p>{renderAnswerField('examples', structuredAnswer.examples)}</p>
           </div>
         )}
          {structuredAnswer.tips && structuredAnswer.tips !== "No specific tips or key takeaways were found in the provided context." && (
           <div className={styles['structured-answer-section']}>
             <strong>Tips / Key Takeaways</strong>
-            <p>{renderTextWithCitations(structuredAnswer.tips, citations, relatedSources)}</p>
+            <p>{renderAnswerField('tips', structuredAnswer.tips)}</p>
           </div>
         )}
         {structuredAnswer.caveats && structuredAnswer.caveats !== "No specific caveats or important considerations were found in the provided context." && (
           <div className={styles['structured-answer-section']}>
             <strong>Caveats / Important Considerations</strong>
-            <p>{renderTextWithCitations(structuredAnswer.caveats, citations, relatedSources)}</p>
+            <p>{renderAnswerField('caveats', structuredAnswer.caveats)}</p>
           </div>
         )}
 
         {relatedSources && relatedSources.length > 0 && (
           <div className={styles['related-sources-list']}>
-            <h5>Related Sources:</h5>
+            <h5>Sources:</h5>
             {relatedSources.map((source, index) => (
               <div key={source.videoUrl + index} className={styles['related-source-item']}> {/* Use a more unique key if possible */}
                 <h3>{source.videoTitle}</h3>
@@ -207,7 +279,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
                     <div className={styles.metadata}>Tags: {source.tags.join(', ')}</div>
                 )}
                 <p className={styles.snippet}>{source.snippet}</p>
-                <a href={source.videoUrl} target="_blank" rel="noopener noreferrer" className={styles['source-link']}>
+                <a href={source.timestampUrl} target="_blank" rel="noopener noreferrer" className={styles['source-link']}>
                   Watch Video ({source.timestampLink || 'Full Video'})
                 </a>
               </div>
@@ -258,7 +330,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
                   <p className={styles.snippet}>
                     {highlightKeywords(item.snippet, searchQuery || '')}
                   </p>
-                  <a href={item.videoUrl} target="_blank" rel="noopener noreferrer" className={styles['source-link']}>
+                  <a href={item.timestampUrl} target="_blank" rel="noopener noreferrer" className={styles['source-link']}>
                     Watch Video ({item.timestampLink || 'View Context'})
                   </a>
                 </div>

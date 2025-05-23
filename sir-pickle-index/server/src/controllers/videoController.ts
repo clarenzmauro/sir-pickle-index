@@ -11,6 +11,235 @@ dotenv.config();
 const MAX_SNIPPET_LENGTH_IN_RESPONSE = 1024; // Max characters for the snippet in relatedSources display
 const MAX_CONTEXT_SEGMENTS_FOR_LLM = 5; // How many top chunks to send to the LLM
 
+// --- Utility functions for timestamp handling ---
+
+/**
+ * Extracts the first timestamp from a transcript chunk
+ * @param text - The transcript text that may contain timestamps (HH:MM:SS format)
+ * @returns The first timestamp string found or null if not found
+ */
+const extractTimestamp = (text: string): string | null => {
+  // Match HH:MM:SS format anywhere in the text, prioritizing earlier occurrences
+  const timestampMatch = text.match(/(\d{2}:\d{2}:\d{2})/);
+  const result = timestampMatch ? timestampMatch[1] : null;
+  console.log(`[extractTimestamp] Input: "${text.substring(0, 100)}..." -> Found: ${result}`);
+  return result;
+};
+
+/**
+ * Converts timestamp (HH:MM:SS) to seconds
+ * @param timestamp - Timestamp in HH:MM:SS format
+ * @returns Total seconds as number
+ */
+const timestampToSeconds = (timestamp: string): number => {
+  try {
+    // Ensure we have the correct format and clean the input
+    const cleanTimestamp = timestamp.trim();
+    const parts = cleanTimestamp.split(':');
+    
+    if (parts.length === 3) {
+      // HH:MM:SS format
+      const hours = parseInt(parts[0], 10) || 0;
+      const minutes = parseInt(parts[1], 10) || 0;
+      const seconds = parseInt(parts[2], 10) || 0;
+      
+      const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+      console.log(`[timestampToSeconds] Converting ${timestamp} -> Hours: ${hours}, Minutes: ${minutes}, Seconds: ${seconds} -> Total: ${totalSeconds}s`);
+      return totalSeconds;
+    } else if (parts.length === 2) {
+      // MM:SS format (no hours)
+      const minutes = parseInt(parts[0], 10) || 0;
+      const seconds = parseInt(parts[1], 10) || 0;
+      
+      const totalSeconds = minutes * 60 + seconds;
+      console.log(`[timestampToSeconds] Converting ${timestamp} -> Minutes: ${minutes}, Seconds: ${seconds} -> Total: ${totalSeconds}s`);
+      return totalSeconds;
+    } else {
+      console.warn(`[timestampToSeconds] Invalid timestamp format: ${timestamp}`);
+      return 0;
+    }
+  } catch (error) {
+    console.error(`[timestampToSeconds] Error converting timestamp ${timestamp}:`, error);
+    return 0;
+  }
+};
+
+/**
+ * Extracts YouTube video ID from various YouTube URL formats
+ * @param url - YouTube URL
+ * @returns Video ID or null if not found
+ */
+const extractYouTubeVideoId = (url: string): string | null => {
+  console.log(`[extractYouTubeVideoId] Processing URL: ${url}`);
+  
+  const patterns = [
+    // youtu.be/VIDEO_ID (with or without query params)
+    /(?:youtu\.be\/)([^?&\n#]+)/,
+    // youtube.com/watch?v=VIDEO_ID
+    /(?:youtube\.com\/watch\?v=)([^&\n?#]+)/,
+    // youtube.com/embed/VIDEO_ID
+    /(?:youtube\.com\/embed\/)([^&\n?#]+)/,
+    // youtube.com/v/VIDEO_ID
+    /(?:youtube\.com\/v\/)([^&\n?#]+)/,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) {
+      const videoId = match[1];
+      console.log(`[extractYouTubeVideoId] Found video ID: ${videoId}`);
+      return videoId;
+    }
+  }
+  
+  console.warn(`[extractYouTubeVideoId] No video ID found in URL: ${url}`);
+  return null;
+};
+
+/**
+ * Generates a timestamped YouTube URL
+ * @param videoUrl - Original YouTube URL
+ * @param timestamp - Timestamp in HH:MM:SS format
+ * @returns Timestamped YouTube URL or original URL if processing fails
+ */
+const generateTimestampedUrl = (videoUrl: string, timestamp: string): string => {
+  try {
+    console.log(`[generateTimestampedUrl] Processing: videoUrl=${videoUrl}, timestamp=${timestamp}`);
+    
+    const videoId = extractYouTubeVideoId(videoUrl);
+    if (!videoId) {
+      console.warn(`[generateTimestampedUrl] Could not extract video ID from: ${videoUrl}`);
+      return videoUrl;
+    }
+    
+    const seconds = timestampToSeconds(timestamp);
+    if (seconds === 0) {
+      console.warn(`[generateTimestampedUrl] Timestamp conversion resulted in 0 seconds for: ${timestamp}`);
+      return videoUrl;
+    }
+    
+    // Use the simple seconds format which is most reliable
+    const finalUrl = `https://www.youtube.com/watch?v=${videoId}&t=${seconds}s`;
+    console.log(`[generateTimestampedUrl] Generated URL: ${finalUrl}`);
+    
+    return finalUrl;
+  } catch (error) {
+    console.error('[generateTimestampedUrl] Failed to generate timestamped URL:', error);
+    return videoUrl;
+  }
+};
+
+/**
+ * Gets timestamp link text and URL from chunk text and video URL
+ * @param chunkText - The transcript chunk text
+ * @param videoUrl - The video URL
+ * @returns Object with linkText and timestampedUrl
+ */
+const getTimestampInfo = (chunkText: string, videoUrl: string): { linkText: string; timestampedUrl: string } => {
+  console.log(`[getTimestampInfo] Processing chunk: "${chunkText.substring(0, 50)}..." with videoUrl: ${videoUrl}`);
+  
+  const timestamp = extractTimestamp(chunkText);
+  
+  if (timestamp && videoUrl) {
+    const result = {
+      linkText: `${timestamp}`,
+      timestampedUrl: generateTimestampedUrl(videoUrl, timestamp)
+    };
+    console.log(`[getTimestampInfo] Result: linkText="${result.linkText}", timestampedUrl="${result.timestampedUrl}"`);
+    return result;
+  }
+  
+  const fallback = {
+    linkText: 'Watch video',
+    timestampedUrl: videoUrl || '#'
+  };
+  console.log(`[getTimestampInfo] Fallback result: linkText="${fallback.linkText}", timestampedUrl="${fallback.timestampedUrl}"`);
+  return fallback;
+};
+
+/**
+ * Processes the AI answer to extract citation markers and create a structured format
+ * @param structuredAnswer - The AI-generated structured answer object with multiple fields
+ * @param citations - Array of citation objects with id and sourceIndex
+ * @returns Object with processed answer parts and citation mapping for each field
+ */
+const processAnswerWithCitations = (structuredAnswer: any, citations: Array<{id: number, sourceIndex: number}>) => {
+  console.log('[processAnswerWithCitations] Starting processing with citations:', citations);
+  
+  // Create a map of citation IDs to sourceIndex for quick lookup
+  const citationMap = new Map(citations.map(c => [c.id, c.sourceIndex]));
+  console.log('[processAnswerWithCitations] Citation map:', Object.fromEntries(citationMap));
+  
+  /**
+   * Process a single text field to extract citations
+   */
+  const processTextField = (text: string) => {
+    console.log(`[processAnswerWithCitations] Processing field with text: "${text.substring(0, 100)}..."`);
+    
+    const parts: Array<{type: 'text' | 'citation', content: string, sourceIndex?: number}> = [];
+    const citationRegex = /\[Source (\d+)\]/g;
+    
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = citationRegex.exec(text)) !== null) {
+      // Add text before citation
+      if (match.index > lastIndex) {
+        const textContent = text.substring(lastIndex, match.index);
+        if (textContent.trim()) {
+          parts.push({ type: 'text', content: textContent });
+        }
+      }
+      
+      // Add citation
+      const citationId = parseInt(match[1]);
+      const sourceIndex = citationMap.get(citationId);
+      console.log(`[processAnswerWithCitations] Found citation [Source ${citationId}] -> sourceIndex: ${sourceIndex}`);
+      
+      parts.push({ 
+        type: 'citation', 
+        content: `[${citationId}]`,
+        sourceIndex: sourceIndex 
+      });
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text after last citation
+    if (lastIndex < text.length) {
+      const remainingText = text.substring(lastIndex);
+      if (remainingText.trim()) {
+        parts.push({ type: 'text', content: remainingText });
+      }
+    }
+    
+    // If no citations found, return the whole text as one part
+    if (parts.length === 0) {
+      parts.push({ type: 'text', content: text });
+    }
+    
+    console.log(`[processAnswerWithCitations] Processed field into ${parts.length} parts:`, parts.map(p => ({type: p.type, content: p.content.substring(0, 50), sourceIndex: p.sourceIndex})));
+    return parts;
+  };
+  
+  // Process each field of the structured answer
+  const processedFields: any = {};
+  
+  Object.keys(structuredAnswer).forEach(field => {
+    if (typeof structuredAnswer[field] === 'string') {
+      processedFields[field] = processTextField(structuredAnswer[field]);
+    } else {
+      // If it's not a string, keep as is
+      processedFields[field] = structuredAnswer[field];
+    }
+  });
+  
+  return {
+    original: structuredAnswer,
+    processed: processedFields
+  };
+};
+
 // --- askQuestion function MODIFIED to use Vector Search and llmService ---
 export const askQuestion = async (
     req: Request,
@@ -93,9 +322,13 @@ export const askQuestion = async (
           videoUrl: chunk.videoUrl
         });
   
+        // Get timestamp information for this chunk
+        const timestampInfo = getTimestampInfo(chunk.segment, chunk.videoUrl);
+  
         relatedSourcesForResponse.push({
           videoTitle: chunk.title,
-          timestampLink: `Relevant segment from video`,
+          timestampLink: timestampInfo.linkText,
+          timestampUrl: timestampInfo.timestampedUrl, // Add the actual timestamped URL
           snippet: chunk.segment.substring(0, MAX_SNIPPET_LENGTH_IN_RESPONSE) + (chunk.segment.length > MAX_SNIPPET_LENGTH_IN_RESPONSE ? '...' : ''),
           publishedDate: chunk.publicationDate,
           tags: chunk.tags,
@@ -131,9 +364,13 @@ export const askQuestion = async (
         .filter(cit => cit.sourceIndex >= 0 && cit.sourceIndex < relatedSourcesForResponse.length)
         .map(cit => relatedSourcesForResponse[cit.sourceIndex]);
   
+      // Process the answer to create structured citation parts
+      const processedAnswer = processAnswerWithCitations(llmResponsePayload.structuredAnswer, finalCitations);
+  
       const finalResponse = {
         answerTimeMs: Date.now() - startTime,
         structuredAnswer: llmResponsePayload.structuredAnswer,
+        processedAnswer: processedAnswer, // Add structured answer with clickable citation data
         citations: finalCitations,
         relatedSources: finalRelatedSources,
       };
@@ -176,6 +413,8 @@ export const searchVideosByKeyword = async (
   
       const results = videos.map((video) => {
         let snippet = '';
+        let timestampInfo = { linkText: 'Watch video', timestampedUrl: video.videoUrl };
+        
         const transcriptLower = video.transcript.toLowerCase();
         const keywordLower = keyword.toLowerCase();
         const firstIndex = transcriptLower.indexOf(keywordLower);
@@ -191,13 +430,38 @@ export const searchVideosByKeyword = async (
           snippet = video.transcript.substring(startIndex, endIndex);
           if (startIndex > 0) snippet = '...' + snippet;
           if (endIndex < video.transcript.length) snippet = snippet + '...';
+
+          // Extract timestamp from the actual snippet context
+          // First try to find a timestamp in the snippet itself
+          const snippetTimestamp = extractTimestamp(snippet);
+          
+          if (snippetTimestamp) {
+            timestampInfo = {
+              linkText: `${snippetTimestamp}`,
+              timestampedUrl: generateTimestampedUrl(video.videoUrl, snippetTimestamp)
+            };
+          } else {
+            // Fallback: Look backwards from the keyword position to find the nearest timestamp
+            const precedingText = video.transcript.substring(0, firstIndex);
+            const timestampMatches = precedingText.match(/(\d{2}:\d{2}:\d{2})/g);
+            
+            if (timestampMatches && timestampMatches.length > 0) {
+              // Get the last (most recent) timestamp before the keyword
+              const nearestTimestamp = timestampMatches[timestampMatches.length - 1];
+              timestampInfo = {
+                linkText: ` ${nearestTimestamp}`,
+                timestampedUrl: generateTimestampedUrl(video.videoUrl, nearestTimestamp)
+              };
+            }
+          }
         } else {
           snippet = video.transcript.substring(0, snippetTotalLength) + (video.transcript.length > snippetTotalLength ? '...' : '');
         }
   
         return {
           videoTitle: video.title,
-          timestampLink: `Snippet found`, // Placeholder
+          timestampLink: timestampInfo.linkText,
+          timestampUrl: timestampInfo.timestampedUrl, // Add the actual timestamped URL
           snippet: snippet,
           publishedDate: video.publicationDate,
           tags: video.tags,
