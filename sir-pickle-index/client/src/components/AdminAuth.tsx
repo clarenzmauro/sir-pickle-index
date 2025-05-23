@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './AdminAuth.css';
+import apiService from '../services/apiService';
 
 interface AdminAuthProps {
   onAuthenticated: () => void;
@@ -18,13 +19,6 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated, onCancel }) => {
   });
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-
-  // Simple hardcoded credentials for demonstration
-  // In production, this should be handled by a backend service
-  const ADMIN_CREDENTIALS = {
-    username: 'admin',
-    password: 'sirpickle2024'
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -51,20 +45,16 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated, onCancel }) => {
     setError('');
 
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Check credentials
-      if (
-        credentials.username === ADMIN_CREDENTIALS.username &&
-        credentials.password === ADMIN_CREDENTIALS.password
-      ) {
+      const response = await apiService.login(credentials);
+      
+      if (response.success) {
         onAuthenticated();
       } else {
-        setError('Invalid username or password');
+        setError(response.message || 'Authentication failed');
       }
-    } catch {
-      setError('Authentication failed. Please try again.');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

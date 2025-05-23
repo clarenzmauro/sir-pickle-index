@@ -23,9 +23,40 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [showAdminAuth, setShowAdminAuth] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Check for existing authentication on component mount
+  useEffect(() => {
+    const checkExistingAuth = async () => {
+      try {
+        if (apiService.isAuthenticated()) {
+          // Verify the token with the backend
+          const response = await apiService.verifyToken();
+          if (response.success) {
+            setIsAuthenticated(true);
+          } else {
+            // Token is invalid, clear it
+            apiService.logout();
+            setIsAuthenticated(false);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        // Token verification failed, clear it
+        apiService.logout();
+        setIsAuthenticated(false);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkExistingAuth();
+  }, []);
 
   // Check URL for admin parameter on component mount and handle URL changes
   useEffect(() => {
+    if (isCheckingAuth) return; // Wait for auth check to complete
+
     const checkAdminParam = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const isAdminRequested = urlParams.get('admin') === 'true';
@@ -34,7 +65,7 @@ function App() {
         setShowAdminAuth(true);
       } else if (!isAdminRequested) {
         setShowAdminAuth(false);
-        setIsAuthenticated(false);
+        // Don't automatically log out if user navigates away from admin URL
       }
     };
 
@@ -47,7 +78,7 @@ function App() {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isCheckingAuth]);
 
   const handleSearch = useCallback(async (searchParams: SearchParams) => {
     setIsLoading(true);
@@ -112,6 +143,8 @@ function App() {
   }, []);
 
   const handleAdminExit = useCallback(() => {
+    // Clear authentication state and tokens
+    apiService.logout();
     setIsAuthenticated(false);
     setShowAdminAuth(false);
     // Remove admin parameter from URL
@@ -138,8 +171,17 @@ function App() {
   );
 
   // Show authentication modal if admin access is requested but not authenticated
-  if (showAdminAuth && !isAuthenticated) {
+  if (showAdminAuth && !isAuthenticated && !isCheckingAuth) {
     return <AdminAuth onAuthenticated={handleAuthSuccess} onCancel={handleAuthCancel} />;
+  }
+
+  // Show loading while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="app-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <div>Checking authentication...</div>
+      </div>
+    );
   }
 
   // Show admin page if authenticated
@@ -182,10 +224,9 @@ function App() {
       <div className="disclaimer-banner">
         <p>
             The information provided by this bot is designed to help users better
-            understand the concepts of Sir Pickle. It is not intended to
-            constitute financial advice, nor should it be relied upon as such.
-            Always double check the information provided as it may contain
-            inaccuracies.
+            understand concepts taught by Sir Pickle. 
+            It is not intended to constitute financial advice, nor should it be relied upon as such.
+            Always double check the information provided as it may contain inaccuracies.
         </p>
       </div>
 
