@@ -35,7 +35,7 @@ interface CitationPart {
 }
 
 interface ProcessedAnswerField {
-  [key: string]: CitationPart[] | any;
+  [key: string]: CitationPart[];
 }
 
 interface ProcessedAnswer {

@@ -1,7 +1,7 @@
 // src/App.tsx
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import './App.css';
-import { useTheme } from './contexts/ThemeContext';
+import { useTheme } from './hooks/useTheme';
 import InputSection, { type SearchParams } from './components/InputSection';
 import ExamplePrompts from './components/ExamplePrompts';
 import ExampleKeywords from './components/ExampleKeywords';
@@ -64,8 +64,8 @@ function App() {
         response = await apiService.keywordSearch(searchParams.query, searchParams.filter);
       }
       setResults(response);
-    } catch (err: any) {
-      setError(err.message || 'An unknown error occurred.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred.');
       console.error("Search error:", err);
     } finally {
       setIsLoading(false);

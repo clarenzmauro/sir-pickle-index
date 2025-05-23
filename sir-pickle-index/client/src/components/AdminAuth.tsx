@@ -63,7 +63,7 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated, onCancel }) => {
       } else {
         setError('Invalid username or password');
       }
-    } catch (err) {
+    } catch {
       setError('Authentication failed. Please try again.');
     } finally {
       setIsLoading(false);

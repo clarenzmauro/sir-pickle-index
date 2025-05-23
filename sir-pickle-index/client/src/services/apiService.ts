@@ -42,15 +42,22 @@ const askQuestion = async (question: string): Promise<AskResult> => {
   try {
     const response = await apiClient.post('/ask', { question });
     return response.data;
-  } catch (error: any) {
-    console.error('Error asking question:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.message || 'Failed to get answer from AI.');
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error asking question:', error);
+    
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { data?: { message?: string } } };
+      throw new Error(axiosError.response?.data?.message || 'Failed to get answer from AI.');
+    }
+    
+    throw new Error(errorMessage);
   }
 };
 
 const keywordSearch = async (keyword: string, filter?: string): Promise<KeywordSearchResult> => {
   try {
-    const params: any = { keyword };
+    const params: Record<string, string> = { keyword };
     
     // Add filter parameter if provided
     if (filter) {
@@ -59,9 +66,16 @@ const keywordSearch = async (keyword: string, filter?: string): Promise<KeywordS
     
     const response = await apiClient.get('/search', { params });
     return response.data;
-  } catch (error: any) {
-    console.error('Error performing keyword search:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.message || 'Failed to perform keyword search.');
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error performing keyword search:', error);
+    
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { data?: { message?: string } } };
+      throw new Error(axiosError.response?.data?.message || 'Failed to perform keyword search.');
+    }
+    
+    throw new Error(errorMessage);
   }
 };
 
@@ -69,9 +83,16 @@ const uploadVideo = async (payload: UploadVideoPayload): Promise<UploadVideoResp
   try {
     const response = await apiClient.post('/admin/upload', payload);
     return response.data;
-  } catch (error: any) {
-    console.error('Error uploading video:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.message || 'Failed to upload video.');
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Error uploading video:', error);
+    
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { data?: { message?: string } } };
+      throw new Error(axiosError.response?.data?.message || 'Failed to upload video.');
+    }
+    
+    throw new Error(errorMessage);
   }
 };
 
