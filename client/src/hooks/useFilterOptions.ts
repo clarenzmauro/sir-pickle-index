@@ -4,7 +4,7 @@
 // In a real application, this would fetch data from the backend API
 //
 import { useState, useEffect } from 'react';
-import type { FilterOption } from '../components/FilterDropdown';
+import type { FilterOption } from '../components/FilterDropdown.js';
 
 // Mock API call - in real app this would hit an endpoint like /api/filters
 const fetchFilterOptions = async (): Promise<FilterOption[]> => {

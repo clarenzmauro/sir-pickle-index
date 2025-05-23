@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import apiService from '../services/apiService';
+import apiService from '../services/apiService.js';
 import styles from './AdminPage.module.css';
 
 interface FormData {

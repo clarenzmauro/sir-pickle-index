@@ -1,15 +1,15 @@
 // src/App.tsx
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import './App.css';
-import { useTheme } from './hooks/useTheme';
-import InputSection, { type SearchParams } from './components/InputSection';
-import ExamplePrompts from './components/ExamplePrompts';
-import ExampleKeywords from './components/ExampleKeywords';
-import ResultsDisplay, { type AskResult, type KeywordSearchResult } from './components/ResultsDisplay';
-import AdminPage from './pages/AdminPage';
-import AdminAuth from './components/AdminAuth'; // Import the new AdminAuth component
-import apiService from './services/apiService';
-import { useFilterOptions } from './hooks/useFilterOptions';
+import { useTheme } from './hooks/useTheme.js';
+import InputSection, { type SearchParams } from './components/InputSection.js';
+import ExamplePrompts from './components/ExamplePrompts.js';
+import ExampleKeywords from './components/ExampleKeywords.js';
+import ResultsDisplay, { type AskResult, type KeywordSearchResult } from './components/ResultsDisplay.js';
+import AdminPage from './pages/AdminPage.js';
+import AdminAuth from './components/AdminAuth.js'; // Import the new AdminAuth component
+import apiService from './services/apiService.js';
+import { useFilterOptions } from './hooks/useFilterOptions.js';
 
 type SearchMode = 'ask' | 'keyword';
 

@@ -7,7 +7,8 @@
     "install:client": "cd client && npm install",
     "install:server": "cd server && npm install",
     "install:all": "npm run install:client && npm run install:server",
-    "build:client": "cd client && npm run build",
+    "typecheck:client": "tsc -b client/tsconfig.json",
+    "build:client:vite": "npm run build --workspace=client",
     "build:server": "cd server && npm run build",
     "build": "npm run build:client && npm run build:server",
     "dev:client": "cd client && npm run dev",
@@ -22,11 +23,12 @@
     "server"
   ],
   "devDependencies": {
+    "@types/react": "^19.1.5",
     "@vercel/node": "^3.0.0",
     "concurrently": "^9.1.0"
   },
   "engines": {
-    "node": ">=18.0.0",
+    "node": "18.x",
     "npm": ">=8.0.0"
   }
-} 
+}

@@ -1,7 +1,7 @@
 // src/components/InputSection.tsx
 import React, { useState, useCallback, useMemo, useRef, memo } from 'react';
 import styles from './InputSection.module.css';
-import FilterDropdown, { type FilterOption } from './FilterDropdown';
+import FilterDropdown, { type FilterOption } from './FilterDropdown.js';
 
 type SearchMode = 'ask' | 'keyword';
 

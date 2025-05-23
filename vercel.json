@@ -1,21 +1,14 @@
 {
   "version": 2,
   "name": "sir-pickle-index",
-  "buildCommand": "npm run install:all && npm run build:client",
+  "installCommand": "npm install --include=dev",
+  "buildCommand": "npm run typecheck:client && npm run build:client:vite",
   "outputDirectory": "client/dist",
-  "installCommand": "npm install",
-  "functions": {
-    "api/*.ts": {
-      "runtime": "nodejs18.x"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/index"
-    }
-  ],
   "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index"
+    },
     {
       "src": "/(.*)",
       "dest": "/client/dist/index.html"

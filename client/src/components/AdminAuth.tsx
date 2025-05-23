@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './AdminAuth.css';
-import apiService from '../services/apiService';
+import apiService from '../services/apiService.js';
 
 interface AdminAuthProps {
   onAuthenticated: () => void;

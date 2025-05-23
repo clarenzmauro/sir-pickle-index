@@ -1,6 +1,6 @@
 // src/services/apiService.ts
 import axios from 'axios';
-import type { AskResult, KeywordSearchResult } from '../components/ResultsDisplay'; // Import types
+import type { AskResult, KeywordSearchResult } from '../components/ResultsDisplay.js'; // Import types
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 

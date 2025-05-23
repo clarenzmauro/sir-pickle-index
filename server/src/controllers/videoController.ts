@@ -245,19 +245,21 @@ export const askQuestion = async (
     req: Request,
     res: Response,
     next: NextFunction
-  ) => {
+  ): Promise<void> => {
     const startTime = Date.now();
     try {
       const { question } = req.body;
   
       if (!question || typeof question !== 'string' || question.trim() === '') {
-        return res.status(400).json({ message: 'Question is required and must be a non-empty string.' });
+        res.status(400).json({ message: 'Question is required and must be a non-empty string.' });
+        return;
       }
   
       // 1. Generate embedding for the user's question
       const queryEmbedding = await generateQueryEmbedding(question);
       if (!queryEmbedding) {
-        return res.status(500).json({ message: 'Failed to generate embedding for the question.' });
+        res.status(500).json({ message: 'Failed to generate embedding for the question.' });
+        return;
       }
   
       // 2. Perform Vector Search on `videochunks` collection
@@ -306,7 +308,8 @@ export const askQuestion = async (
       ]).exec();
 
       if (!relevantChunks || relevantChunks.length === 0) {
-        return res.status(404).json({ message: 'Could not find relevant context for your question using vector search.' });
+        res.status(404).json({ message: 'Could not find relevant context for your question using vector search.' });
+        return;
       }
   
       // 3. Prepare context for LLM and sources for the final response
@@ -339,7 +342,8 @@ export const askQuestion = async (
       });
   
       if (contextSegmentsForLLM.length === 0) { // Should not happen if relevantChunks has items
-          return res.status(404).json({ message: "No suitable context segments prepared for the AI." });
+          res.status(404).json({ message: "No suitable context segments prepared for the AI." });
+          return;
       }
   
       // 4. Call the abstracted LLM service
@@ -348,7 +352,8 @@ export const askQuestion = async (
       if (!llmResponsePayload || !llmResponsePayload.structuredAnswer || !llmResponsePayload.citations) {
         // Handle case where LLM call failed or returned unexpected/null structure
         console.error("[videoController:askQuestion] LLM service returned null or invalid payload:", llmResponsePayload);
-        return res.status(500).json({ message: "Failed to get a valid response from the AI model." });
+        res.status(500).json({ message: "Failed to get a valid response from the AI model." });
+        return;
       }
   
       // The `sourceIndex` in `llmResponsePayload.citations` refers to the 0-based index
@@ -376,6 +381,7 @@ export const askQuestion = async (
       };
   
       res.status(200).json(finalResponse);
+      return;
   
     } catch (error) {
       console.error('[videoController:askQuestion] Error:', error);
@@ -388,14 +394,15 @@ export const searchVideosByKeyword = async (
     req: Request,
     res: Response,
     next: NextFunction
-  ) => {
+  ): Promise<void> => {
     try {
       const keyword = req.query.keyword as string;
   
       if (!keyword || typeof keyword !== 'string' || keyword.trim() === '') {
-        return res
+        res
           .status(400)
           .json({ message: 'Keyword query parameter is required.' });
+        return;
       }
 
       // First get videos using MongoDB text search
@@ -408,9 +415,10 @@ export const searchVideosByKeyword = async (
         .lean();
   
       if (!videos || videos.length === 0) {
-        return res
+        res
           .status(404)
           .json({ message: 'No videos found matching your keyword.' });
+        return;
       }
 
       // Helper function to find the best match position in text
@@ -556,6 +564,7 @@ export const searchVideosByKeyword = async (
       });
   
       res.status(200).json({ results: filteredResults });
+      return;
     } catch (error) {
       console.error('[videoController:searchVideosByKeyword] Error:', error);
       next(error);
