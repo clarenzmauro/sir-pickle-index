@@ -1,24 +1,28 @@
 /* src/index.css */
 :root {
+  /* Sir Pickle Brand Colors - Light Mode */
   --background-color-light: #ffffff;
-  --text-color-light: #213547;
-  --primary-color-light: #f9f9f9; /* Example primary for light cards */
-  --disclaimer-bg-light: #f8d7da; /* Light theme disclaimer background */
+  --text-color-light: #1a4532; /* Dark green for text in light mode */
+  --primary-color-light: #f8fffe; /* Very light green tint for cards */
+  --disclaimer-bg-light: #e8f5e8; /* Light green for disclaimer */
   --input-bg-light: #ffffff;
-  --input-border-light: #e2e8f0;
-  --button-bg-light: #f1f5f9;
-  --button-text-light: #213547;
-  --button-active-bg-light: #e2e8f0;
+  --input-border-light: #d1f2d1; /* Light green border */
+  --button-bg-light: #f0fdf4; /* Very light green for buttons */
+  --button-text-light: #1a4532; /* Dark green text */
+  --button-active-bg-light: #7ed321; /* Sir Pickle lime green for active states */
+  --accent-color-light: #7ed321; /* Sir Pickle lime green accent */
 
-  --background-color-dark: #1a1a1a; /* Or your preferred dark bg like #0D0D0D from image */
-  --text-color-dark: rgba(255, 255, 255, 0.87);
-  --primary-color-dark: #242424; /* Example primary for dark cards */
-  --disclaimer-bg-dark: #442222; /* Example for disclaimer */
-  --input-bg-dark: #1e1e1e;
-  --input-border-dark: #333333;
-  --button-bg-dark: #3a3a3a;
+  /* Sir Pickle Brand Colors - Dark Mode */
+  --background-color-dark: #1a4532; /* Sir Pickle dark green background */
+  --text-color-dark: rgba(255, 255, 255, 0.92);
+  --primary-color-dark: #215c42; /* Slightly lighter green for cards in dark mode */
+  --disclaimer-bg-dark: #2d6b4a; /* Medium green for disclaimer */
+  --input-bg-dark: #0f2b1c; /* Very dark green for inputs */
+  --input-border-dark: #2d6b4a; /* Medium green border */
+  --button-bg-dark: #2d6b4a; /* Medium green for buttons */
   --button-text-dark: #ffffff;
-  --button-active-bg-dark: #555555;
+  --button-active-bg-dark: #7ed321; /* Sir Pickle lime green for active states */
+  --accent-color-dark: #7ed321; /* Sir Pickle lime green accent */
 
   /* Performance optimizations */
   --transition-theme: 0.15s ease-out;
@@ -36,6 +40,7 @@ html[data-theme='light'] {
   --button-bg: var(--button-bg-light);
   --button-text: var(--button-text-light);
   --button-active-bg: var(--button-active-bg-light);
+  --accent-color: var(--accent-color-light);
 }
 
 html[data-theme='dark'] {
@@ -48,6 +53,7 @@ html[data-theme='dark'] {
   --button-bg: var(--button-bg-dark);
   --button-text: var(--button-text-dark);
   --button-active-bg: var(--button-active-bg-dark);
+  --accent-color: var(--accent-color-dark);
 }
 
 body {

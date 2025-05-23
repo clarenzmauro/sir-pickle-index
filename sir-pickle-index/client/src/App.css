@@ -42,17 +42,19 @@
 }
 
 .theme-toggle-button:hover {
-  background-color: var(--button-active-bg);
+  background-color: var(--accent-color);
+  color: #000; /* Dark text on bright lime green */
   transform: translateZ(0) scale(1.05);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(126, 211, 33, 0.3);
 }
 
 .theme-toggle-button:active {
   transform: translateZ(0) scale(0.98);
+  background-color: #6bc218; /* Slightly darker on active */
 }
 
 html[data-theme='dark'] .theme-toggle-button:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(126, 211, 33, 0.4);
 }
 
 .disclaimer-banner {
@@ -60,6 +62,7 @@ html[data-theme='dark'] .theme-toggle-button:hover {
   color: var(--text-color); /* Use theme variable instead of hardcoded light color */
   padding: 10px 15px;
   border-radius: 8px;
+  border-left: 4px solid var(--accent-color); /* Sir Pickle accent border */
   margin-bottom: 40px; /* Standardized spacing - changed from 30px */
   font-size: 0.9em;
   text-align: center;
