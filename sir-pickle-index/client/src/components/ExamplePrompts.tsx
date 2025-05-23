@@ -11,13 +11,15 @@ interface ExamplePromptsProps {
 type SearchMode = 'ask' | 'keyword';
 
 const exampleQueries = [
-  { text: 'What is an order block?', mode: 'ask' as SearchMode },
-  { text: 'What is institutional order flow?', mode: 'ask' as SearchMode },
-  { text: 'How do I use an optimal trade entry?', mode: 'ask' as SearchMode },
-  { text: 'Premium and discount PD arrays', mode: 'keyword' as SearchMode }, // Example keyword
-  { text: 'Why not trade during high impact news?', mode: 'ask' as SearchMode },
-  { text: 'What is an SMT divergence?', mode: 'ask' as SearchMode },
-  // Add more examples from your design
+  { text: 'How do I use swing trading with IRL and ERL?', mode: 'ask' as SearchMode },
+  { text: 'What are the most powerful trading entry models?', mode: 'ask' as SearchMode },
+  { text: 'How do I avoid low probability trading conditions?', mode: 'ask' as SearchMode },
+  { text: 'What is the key to bias in IRL and ERL?', mode: 'ask' as SearchMode },
+  { text: 'How do I use the economic calendar for trading?', mode: 'ask' as SearchMode },
+  { text: 'How do I predict the next candlestick?', mode: 'ask' as SearchMode },
+  { text: 'What is top down analysis in ICT concepts?', mode: 'ask' as SearchMode },
+  { text: 'How do I catch the highest probability setups?', mode: 'ask' as SearchMode },
+  { text: 'How do I organize my trade journal?', mode: 'ask' as SearchMode },
 ];
 
 const ExamplePrompts: React.FC<ExamplePromptsProps> = ({ onPromptClick, isLoading }) => {

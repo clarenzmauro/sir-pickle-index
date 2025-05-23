@@ -4,6 +4,7 @@ import './App.css';
 import { useTheme } from './contexts/ThemeContext';
 import InputSection, { type SearchParams } from './components/InputSection';
 import ExamplePrompts from './components/ExamplePrompts';
+import ExampleKeywords from './components/ExampleKeywords';
 import ResultsDisplay, { type AskResult, type KeywordSearchResult } from './components/ResultsDisplay';
 import AdminPage from './pages/AdminPage';
 import AdminAuth from './components/AdminAuth'; // Import the new AdminAuth component
@@ -79,6 +80,23 @@ function App() {
     };
     handleSearch(searchParams);
   };
+
+  const handleKeywordClick = (keyword: string) => {
+    console.log(`Example keyword clicked: "${keyword}"`);
+    const searchParams: SearchParams = {
+      query: keyword,
+      mode: 'keyword',
+    };
+    handleSearch(searchParams);
+  };
+
+  const handleModeChange = useCallback((newMode: SearchMode) => {
+    // Clear results, error, and current query when switching modes
+    setResults(null);
+    setError(null);
+    setCurrentQuery('');
+    setCurrentSearchMode(newMode);
+  }, []);
 
   const handleAuthSuccess = () => {
     setIsAuthenticated(true);
@@ -159,10 +177,17 @@ function App() {
           onSearch={handleSearch} 
           isLoading={isLoading} 
           filterOptions={filterOptions}
+          onModeChange={handleModeChange}
         />
         
         {!results && !isLoading && !error && (
-          <ExamplePrompts onPromptClick={handlePromptClick} isLoading={isLoading} />
+          <>
+            {currentSearchMode === 'ask' ? (
+              <ExamplePrompts onPromptClick={handlePromptClick} isLoading={isLoading} />
+            ) : (
+              <ExampleKeywords onKeywordClick={handleKeywordClick} isLoading={isLoading} />
+            )}
+          </>
         )}
         
         {(results || isLoading || error) && (

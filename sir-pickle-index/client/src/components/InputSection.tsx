@@ -15,6 +15,7 @@ interface InputSectionProps {
   onSearch: (params: SearchParams) => void;
   isLoading: boolean;
   filterOptions?: FilterOption[]; // Optional filter options
+  onModeChange?: (mode: SearchMode) => void; // Optional callback for mode changes
 }
 
 // Default filter options - these would typically come from an API call
@@ -28,7 +29,8 @@ const DEFAULT_FILTER_OPTIONS: FilterOption[] = [
 const InputSection: React.FC<InputSectionProps> = ({ 
   onSearch, 
   isLoading, 
-  filterOptions = DEFAULT_FILTER_OPTIONS 
+  filterOptions = DEFAULT_FILTER_OPTIONS,
+  onModeChange
 }) => {
   const [searchMode, setSearchMode] = useState<SearchMode>('ask');
   const [query, setQuery] = useState('');
@@ -70,6 +72,9 @@ const InputSection: React.FC<InputSectionProps> = ({
     // Reset filter when switching modes
     if (mode === 'ask') {
       setSelectedFilter('');
+    }
+    if (onModeChange) {
+      onModeChange(mode);
     }
   };
 

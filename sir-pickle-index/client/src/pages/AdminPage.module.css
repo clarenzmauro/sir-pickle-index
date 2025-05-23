@@ -1,7 +1,4 @@
 /* AdminPage.module.css */
-.adminPageContainer {
-  /* Remove container styling - let parent app-container handle layout like homepage */
-}
 
 .pageHeader {
   text-align: center;
