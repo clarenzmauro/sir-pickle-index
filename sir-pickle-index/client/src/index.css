@@ -1,0 +1,61 @@
+/* src/index.css */
+:root {
+  --background-color-light: #ffffff;
+  --text-color-light: #213547;
+  --primary-color-light: #f9f9f9; /* Example primary for light cards */
+  --disclaimer-bg-light: #f8d7da; /* Light theme disclaimer background */
+  --input-bg-light: #ffffff;
+  --input-border-light: #e2e8f0;
+  --button-bg-light: #f1f5f9;
+  --button-text-light: #213547;
+  --button-active-bg-light: #e2e8f0;
+
+  --background-color-dark: #1a1a1a; /* Or your preferred dark bg like #0D0D0D from image */
+  --text-color-dark: rgba(255, 255, 255, 0.87);
+  --primary-color-dark: #242424; /* Example primary for dark cards */
+  --disclaimer-bg-dark: #442222; /* Example for disclaimer */
+  --input-bg-dark: #1e1e1e;
+  --input-border-dark: #333333;
+  --button-bg-dark: #3a3a3a;
+  --button-text-dark: #ffffff;
+  --button-active-bg-dark: #555555;
+}
+
+html[data-theme='light'] {
+  --background-color: var(--background-color-light);
+  --text-color: var(--text-color-light);
+  --primary-color: var(--primary-color-light);
+  --disclaimer-bg: var(--disclaimer-bg-light);
+  --input-bg: var(--input-bg-light);
+  --input-border: var(--input-border-light);
+  --button-bg: var(--button-bg-light);
+  --button-text: var(--button-text-light);
+  --button-active-bg: var(--button-active-bg-light);
+}
+
+html[data-theme='dark'] {
+  --background-color: var(--background-color-dark);
+  --text-color: var(--text-color-dark);
+  --primary-color: var(--primary-color-dark);
+  --disclaimer-bg: var(--disclaimer-bg-dark);
+  --input-bg: var(--input-bg-dark);
+  --input-border: var(--input-border-dark);
+  --button-bg: var(--button-bg-dark);
+  --button-text: var(--button-text-dark);
+  --button-active-bg: var(--button-active-bg-dark);
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  transition: background-color 0.3s, color 0.3s;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center content horizontally */
+}
+/* Add more global styles or resets if needed */

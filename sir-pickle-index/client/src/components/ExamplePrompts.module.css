@@ -1,0 +1,56 @@
+/* ExamplePrompts.module.css */
+
+.example-prompts-container {
+  margin-bottom: 30px;
+  padding: 15px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background-color: var(--primary-color);
+}
+
+.example-prompts-title {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.1em;
+  color: var(--text-color);
+}
+
+.prompts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Responsive grid */
+  gap: 10px;
+}
+
+.prompt-button {
+  padding: 10px;
+  text-align: left;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.2s ease;
+}
+
+.prompt-button:hover:not(:disabled) {
+  background-color: var(--button-active-bg);
+}
+
+.prompt-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .prompts-grid {
+    grid-template-columns: 1fr; /* Single column on mobile */
+    gap: 8px;
+  }
+  
+  .prompt-button {
+    padding: 12px;
+    font-size: 0.95em;
+  }
+} 

@@ -1,0 +1,72 @@
+/* src/App.css */
+.app-container {
+  width: 100%;
+  max-width: 1000px; /* Changed from 900px to match InputSection and ResultsDisplay */
+  margin: 0 auto;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.app-header h1 {
+  font-size: 2em; /* Adjust as per design */
+  margin: 0;
+}
+
+
+
+.theme-toggle-button {
+  padding: 8px 12px;
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.theme-toggle-button:hover {
+  background-color: var(--button-active-bg);
+}
+
+
+.disclaimer-banner {
+  background-color: var(--disclaimer-bg); /* Use theme variable */
+  color: var(--text-color); /* Use theme variable instead of hardcoded light color */
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+  font-size: 0.9em;
+  text-align: center;
+}
+
+/* Enhanced responsive design to match other components */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 16px;
+  }
+  
+  .disclaimer-banner {
+    margin-bottom: 24px;
+    padding: 8px 12px;
+    font-size: 0.85em;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-container {
+    padding: 12px;
+  }
+  
+  .disclaimer-banner {
+    margin-bottom: 20px;
+    padding: 6px 10px;
+    font-size: 0.8em;
+  }
+}

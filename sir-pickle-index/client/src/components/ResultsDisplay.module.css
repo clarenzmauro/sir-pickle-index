@@ -1,0 +1,218 @@
+/* Styles for ResultsDisplay - Add to App.css or ResultsDisplay.module.css */
+.results-display-container {
+    margin-top: 20px;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 1000px;
+    padding: 20px; /* Increased padding */
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    background-color: var(--primary-color); /* Or var(--input-bg) if you prefer darker */
+    min-height: 200px;
+  }
+  
+  .loading-text, .error-text, .no-results-text {
+    text-align: center;
+    font-size: 1.1em;
+    color: var(--text-color);
+    padding: 20px;
+  }
+  
+  .error-text {
+    color: #ff6b6b; /* Specific error color */
+  }
+  
+  .ask-result-container h4, .ask-result-container h5 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--text-color);
+  }
+  .ask-result-container h4 {
+      font-size: 1.2em;
+      border-bottom: 1px solid var(--input-border);
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+  }
+  .ask-result-container h5 {
+      font-size: 1.1em;
+      margin-top: 20px; /* Space above "Related Sources" */
+  }
+  
+  .structured-answer-section {
+    margin-bottom: 15px;
+  }
+  
+  .structured-answer-section strong {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+  }
+  
+  .structured-answer-section p, 
+  .structured-answer-section div { /* If you wrap sections in divs */
+    line-height: 1.6;
+    white-space: pre-wrap; /* Respect newlines from AI response */
+    color: var(--text-color);
+    opacity: 0.9;
+  }
+  
+  /* Citation Styling (Conceptual) */
+  .citation-link {
+    color: #8ab4f8; /* Example link color, adjust to your theme */
+    text-decoration: none;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .citation-link:hover {
+    text-decoration: underline;
+  }
+  
+  
+  .related-sources-list {
+    margin-top: 20px;
+    border-top: 1px solid var(--input-border);
+    padding-top: 15px;
+  }
+  
+  .related-source-item {
+    background-color: var(--input-bg); /* Slightly different background for source items */
+    padding: 15px;
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    margin-bottom: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  html[data-theme='dark'] .related-source-item {
+     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  
+  
+  .related-source-item h3 { /* Title of the source */
+    font-size: 1.05em;
+    margin-top: 0;
+    margin-bottom: 5px;
+    color: var(--text-color);
+  }
+  
+  .related-source-item .metadata {
+    font-size: 0.8em;
+    color: var(--text-color);
+    opacity: 0.7;
+    margin-bottom: 10px;
+  }
+  .related-source-item .metadata span {
+    margin-right: 10px;
+  }
+  
+  .related-source-item .snippet {
+    font-size: 0.9em;
+    white-space: pre-wrap;
+    margin-bottom: 10px;
+    max-height: 100px; /* Limit snippet height */
+    overflow-y: auto; /* Allow scrolling for long snippets */
+    padding: 5px;
+    background-color: var(--primary-color); /* Slightly different bg for snippet box */
+    border-radius: 4px;
+  }
+  
+  .related-source-item .source-link {
+    display: inline-block;
+    font-size: 0.9em;
+    color: #8ab4f8; /* Example link color */
+    text-decoration: none;
+  }
+  .related-source-item .source-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Keyword Highlighting */
+  .keyword-highlight {
+    background-color: #4ade80; /* Green highlight color */
+    color: #000;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+
+  .keyword-highlight:hover {
+    background-color: #22c55e;
+    transform: scale(1.05);
+  }
+
+  /* Dark theme support for keyword highlighting */
+  html[data-theme='dark'] .keyword-highlight {
+    background-color: #22c55e; /* Slightly different green for dark mode */
+    color: #000;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+
+  html[data-theme='dark'] .keyword-highlight:hover {
+    background-color: #16a34a;
+  }
+
+  /* Keyword Results Specific Styles */
+  .keyword-result-container h4 {
+    font-size: 1.2em;
+    border-bottom: 1px solid var(--input-border);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+    color: var(--text-color);
+  }
+
+  .results-count {
+    font-size: 0.9em;
+    color: var(--text-color);
+    opacity: 0.7;
+    margin-bottom: 15px;
+    font-style: italic;
+  }
+
+  /* Applied Filter Display */
+  .applied-filter {
+    background-color: var(--button-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+  }
+
+  .filter-label {
+    color: var(--text-color);
+    opacity: 0.7;
+    margin-right: 6px;
+  }
+
+  .filter-value {
+    color: var(--text-color);
+    font-weight: 600;
+    background-color: var(--keyword-highlight-bg, #4ade80);
+    color: #000;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.85em;
+  }
+
+  html[data-theme='dark'] .filter-value {
+    background-color: var(--keyword-highlight-bg, #22c55e);
+  }
+
+  /* Enhanced responsive design to match InputSection */
+  @media (max-width: 768px) {
+    .results-display-container {
+      margin-left: 16px;
+      margin-right: 16px;
+      max-width: none;
+      padding: 16px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .results-display-container {
+      margin-left: 12px;
+      margin-right: 12px;
+      padding: 14px;
+    }
+  }
