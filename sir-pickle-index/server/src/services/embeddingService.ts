@@ -1,69 +1,72 @@
-import { GoogleGenerativeAI, TaskType, Part } from '@google/generative-ai';
+// src/services/embeddingService.ts
+import { GoogleGenerativeAI, TaskType, Part, Content } from '@google/generative-ai'; // Added Content
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config(); // Ensure .env variables are loaded
 
-const GEMMA_API_KEY = process.env.GEMMA_API_KEY; // Your Google AI API Key
-// Use the specific embedding model identifier
-const EMBEDDING_MODEL_NAME = "text-embedding-004";
+const GOOGLE_AI_API_KEY = process.env.GOOGLE_AI_STUDIO_API_KEY; // Using a more generic name, ensure your .env matches
+const EMBEDDING_MODEL_NAME = "text-embedding-004"; // Or your preferred embedding model
 
-if (!GEMMA_API_KEY) {
+if (!GOOGLE_AI_API_KEY) {
   console.warn(
-    '[EmbeddingService] GEMMA_API_KEY is not set. Embedding functionality will be disabled.'
+    '[EmbeddingService] GOOGLE_AI_API_KEY (expected as GOOGLE_AI_STUDIO_API_KEY in .env) is not set. Embedding functionality will be disabled.'
   );
 }
 
-const genAI = GEMMA_API_KEY ? new GoogleGenerativeAI(GEMMA_API_KEY) : null;
-const embeddingModel = genAI ? genAI.getGenerativeModel({ model: EMBEDDING_MODEL_NAME }) : null;
+const genAIEmbed = GOOGLE_AI_API_KEY ? new GoogleGenerativeAI(GOOGLE_AI_API_KEY) : null;
+const embeddingModel = genAIEmbed ? genAIEmbed.getGenerativeModel({ model: EMBEDDING_MODEL_NAME }) : null;
 
+// Corrected generateEmbedding function (for document chunks)
 export const generateEmbedding = async (text: string): Promise<number[] | null> => {
   if (!embeddingModel) {
-    console.error('Embedding model not initialized. Check API Key.');
+    console.error('[EmbeddingService] Embedding model not initialized. Check API Key.');
     return null;
   }
 
   try {
-    // Clean the text slightly: replace multiple newlines with a single space
     const cleanedText = text.replace(/(\r\n|\n|\r)+/gm, " ").trim();
     if (!cleanedText) {
-        console.warn("Attempted to generate embedding for empty text.");
-        return null; // Or return a zero vector of appropriate dimension
+        console.warn("[EmbeddingService] Attempted to generate embedding for empty text.");
+        return null;
     }
 
-    const result = await embeddingModel.embedContent(
-        cleanedText
-        // Optional: You can specify the task type if it helps the model
-        // { taskType: TaskType.RETRIEVAL_DOCUMENT } // For chunks to be stored
-        // { taskType: TaskType.RETRIEVAL_QUERY } // For user questions
-    );
+    // Construct the request object, similar to generateQueryEmbedding
+    const request = {
+        content: { parts: [{ text: cleanedText }], role: "user" } as Content, // Explicitly cast to Content
+        taskType: TaskType.RETRIEVAL_DOCUMENT // Specify task type for document chunks
+    };
+
+    const result = await embeddingModel.embedContent(request);
     const embedding = result.embedding;
     return embedding.values;
   } catch (error) {
-    console.error('Error generating embedding:', error);
+    console.error('[EmbeddingService] Error generating document embedding:', error);
     return null;
   }
 };
 
-// Helper to generate embedding for a query (can specify task type)
+// Corrected generateQueryEmbedding function (for user questions)
 export const generateQueryEmbedding = async (queryText: string): Promise<number[] | null> => {
     if (!embeddingModel) {
-        console.error('Embedding model not initialized. Check API Key.');
+        console.error('[EmbeddingService] Embedding model not initialized. Check API Key.');
         return null;
     }
     try {
         const cleanedText = queryText.replace(/(\r\n|\n|\r)+/gm, " ").trim();
-        if (!cleanedText) return null;
+        if (!cleanedText) {
+            console.warn("[EmbeddingService] Attempted to generate query embedding for empty text.");
+            return null;
+        }
 
-        // Construct the request object
         const request = {
-            content: { parts: [{ text: cleanedText }], role: "user" }, 
+            content: { parts: [{ text: cleanedText }], role: "user" } as Content, // Explicitly cast to Content
             taskType: TaskType.RETRIEVAL_QUERY
         };
 
         const result = await embeddingModel.embedContent(request);
         return result.embedding.values;
     } catch (error) {
-        console.error('Error generating query embedding:', error);
+        console.error('[EmbeddingService] Error generating query embedding:', error);
         return null;
     }
 };
