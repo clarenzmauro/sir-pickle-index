@@ -383,7 +383,7 @@ export const askQuestion = async (
     }
   };
 
-// --- searchVideosByKeyword (Non-AI, remains the same) ---
+// --- searchVideosByKeyword (Enhanced with better keyword matching) ---
 export const searchVideosByKeyword = async (
     req: Request,
     res: Response,
@@ -397,6 +397,8 @@ export const searchVideosByKeyword = async (
           .status(400)
           .json({ message: 'Keyword query parameter is required.' });
       }
+
+      // First get videos using MongoDB text search
       const videos = await Video.find(
         { $text: { $search: keyword } },
         { score: { $meta: 'textScore' } }
@@ -410,29 +412,86 @@ export const searchVideosByKeyword = async (
           .status(404)
           .json({ message: 'No videos found matching your keyword.' });
       }
-  
+
+      // Helper function to find the best match position in text
+      const findBestMatchPosition = (text: string, searchTerms: string[]): { position: number; matchedTerms: string[] } => {
+        const textLower = text.toLowerCase();
+        let bestPosition = -1;
+        let bestScore = 0;
+        let bestMatchedTerms: string[] = [];
+        
+        // Look for exact phrase first
+        const exactPhraseIndex = textLower.indexOf(keyword.toLowerCase());
+        if (exactPhraseIndex !== -1) {
+          return { 
+            position: exactPhraseIndex, 
+            matchedTerms: [keyword.toLowerCase()] 
+          };
+        }
+        
+        // Look for positions where multiple search terms appear close together
+        for (let i = 0; i < text.length - 50; i++) {
+          const window = textLower.substring(i, i + 200); // 200-char window
+          const matchedInWindow = searchTerms.filter(term => window.includes(term));
+          
+          if (matchedInWindow.length > bestScore) {
+            bestScore = matchedInWindow.length;
+            bestPosition = i;
+            bestMatchedTerms = matchedInWindow;
+          }
+        }
+        
+        // If we found at least one term, return that position
+        if (bestScore > 0) {
+          return { position: bestPosition, matchedTerms: bestMatchedTerms };
+        }
+        
+        // Last resort: look for any single term
+        for (const term of searchTerms) {
+          const termIndex = textLower.indexOf(term);
+          if (termIndex !== -1) {
+            return { position: termIndex, matchedTerms: [term] };
+          }
+        }
+        
+        return { position: -1, matchedTerms: [] };
+      };
+
+      // Split keyword into individual terms for better matching
+      const searchTerms = keyword.toLowerCase()
+        .split(/\s+/)
+        .filter(term => term.length > 2); // Filter out very short words like "a", "is", etc.
+
       const results = videos.map((video) => {
         let snippet = '';
         let timestampInfo = { linkText: 'Watch video', timestampedUrl: video.videoUrl };
         
         const transcriptLower = video.transcript.toLowerCase();
-        const keywordLower = keyword.toLowerCase();
-        const firstIndex = transcriptLower.indexOf(keywordLower);
-        const snippetContextLength = 50; // Characters before keyword
-        const snippetTotalLength = 250; // Approx total length of snippet
-
-        if (firstIndex !== -1) {
-          const startIndex = Math.max(0, firstIndex - snippetContextLength);
+        const titleLower = video.title.toLowerCase();
+        
+        // Check if keywords appear in title first (higher relevance)
+        const titleMatch = searchTerms.some(term => titleLower.includes(term));
+        
+        // Find the best match position in transcript
+        const matchResult = findBestMatchPosition(video.transcript, searchTerms);
+        
+        if (matchResult.position !== -1) {
+          // Extract snippet around the matched content
+          const snippetContextLength = 50;
+          const snippetTotalLength = 250;
+          const matchPosition = matchResult.position;
+          
+          const startIndex = Math.max(0, matchPosition - snippetContextLength);
           const endIndex = Math.min(
             video.transcript.length,
-            firstIndex + keyword.length + (snippetTotalLength - keyword.length - snippetContextLength)
+            matchPosition + snippetTotalLength - snippetContextLength
           );
+          
           snippet = video.transcript.substring(startIndex, endIndex);
           if (startIndex > 0) snippet = '...' + snippet;
           if (endIndex < video.transcript.length) snippet = snippet + '...';
 
-          // Extract timestamp from the actual snippet context
-          // First try to find a timestamp in the snippet itself
+          // Extract timestamp from the snippet context
           const snippetTimestamp = extractTimestamp(snippet);
           
           if (snippetTimestamp) {
@@ -441,37 +500,62 @@ export const searchVideosByKeyword = async (
               timestampedUrl: generateTimestampedUrl(video.videoUrl, snippetTimestamp)
             };
           } else {
-            // Fallback: Look backwards from the keyword position to find the nearest timestamp
-            const precedingText = video.transcript.substring(0, firstIndex);
+            // Look backwards from match position to find nearest timestamp
+            const precedingText = video.transcript.substring(0, matchPosition);
             const timestampMatches = precedingText.match(/(\d{2}:\d{2}:\d{2})/g);
             
             if (timestampMatches && timestampMatches.length > 0) {
-              // Get the last (most recent) timestamp before the keyword
               const nearestTimestamp = timestampMatches[timestampMatches.length - 1];
               timestampInfo = {
-                linkText: ` ${nearestTimestamp}`,
+                linkText: `${nearestTimestamp}`,
                 timestampedUrl: generateTimestampedUrl(video.videoUrl, nearestTimestamp)
               };
             }
           }
+        } else if (titleMatch) {
+          // If keywords are in title but not found in transcript content, 
+          // still include but use beginning of transcript
+          snippet = video.transcript.substring(0, 250) + (video.transcript.length > 250 ? '...' : '');
+          console.log(`[searchVideosByKeyword] Title match but no transcript match for: ${video.title}`);
         } else {
-          snippet = video.transcript.substring(0, snippetTotalLength) + (video.transcript.length > snippetTotalLength ? '...' : '');
+          // This video probably shouldn't be in results, but MongoDB text search included it
+          // Log this case and use beginning of transcript
+          snippet = video.transcript.substring(0, 250) + (video.transcript.length > 250 ? '...' : '');
+          console.log(`[searchVideosByKeyword] No clear match found for "${keyword}" in: ${video.title}`);
         }
   
         return {
           videoTitle: video.title,
           timestampLink: timestampInfo.linkText,
-          timestampUrl: timestampInfo.timestampedUrl, // Add the actual timestamped URL
+          timestampUrl: timestampInfo.timestampedUrl,
           snippet: snippet,
           publishedDate: video.publicationDate,
           tags: video.tags,
-          channel: 'Sir Pickle', // As per PRD
+          channel: 'Sir Pickle',
           category: video.category,
           videoUrl: video.videoUrl,
         };
       });
+
+      // Filter out results that have no clear relevance (optional - you might want to keep this for debugging)
+      const filteredResults = results.filter(result => {
+        const hasKeywordInTitle = searchTerms.some(term => 
+          result.videoTitle.toLowerCase().includes(term)
+        );
+        const hasKeywordInSnippet = searchTerms.some(term => 
+          result.snippet.toLowerCase().includes(term)
+        );
+        
+        const isRelevant = hasKeywordInTitle || hasKeywordInSnippet;
+        
+        if (!isRelevant) {
+          console.log(`[searchVideosByKeyword] Filtering out irrelevant result: ${result.videoTitle}`);
+        }
+        
+        return isRelevant;
+      });
   
-      res.status(200).json({ results });
+      res.status(200).json({ results: filteredResults });
     } catch (error) {
       console.error('[videoController:searchVideosByKeyword] Error:', error);
       next(error);

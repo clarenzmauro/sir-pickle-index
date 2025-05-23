@@ -150,11 +150,11 @@ const renderTextWithCitations = (text: string, citations: Citation[], relatedSou
 const highlightKeywords = (text: string, searchQuery: string) => {
   if (!text || !searchQuery) return text;
 
-  // Split search query into individual terms and filter out empty strings
+  // Split search query into individual terms and filter out empty/short strings
   const keywords = searchQuery
     .toLowerCase()
     .split(/\s+/)
-    .filter(term => term.length > 0);
+    .filter(term => term.length > 2); // Filter out very short words like "a", "is", etc.
 
   if (keywords.length === 0) return text;
 
@@ -163,7 +163,21 @@ const highlightKeywords = (text: string, searchQuery: string) => {
   const escapedKeywords = keywords.map(keyword => 
     keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   );
-  const pattern = new RegExp(`(${escapedKeywords.join('|')})`, 'gi');
+  
+  // Try to match exact phrase first, then individual words
+  const exactPhrase = searchQuery.trim().toLowerCase();
+  const patterns = [];
+  
+  // Add exact phrase pattern if it's longer than a single word
+  if (exactPhrase.includes(' ') && exactPhrase.length > 3) {
+    const escapedPhrase = exactPhrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    patterns.push(escapedPhrase);
+  }
+  
+  // Add individual keyword patterns
+  patterns.push(...escapedKeywords);
+  
+  const pattern = new RegExp(`(${patterns.join('|')})`, 'gi');
 
   // Split text by the pattern and wrap matches in mark tags
   const parts = text.split(pattern);
@@ -171,12 +185,12 @@ const highlightKeywords = (text: string, searchQuery: string) => {
   return parts.map((part, index) => {
     if (!part) return <React.Fragment key={index}></React.Fragment>;
     
-    // Check if this part matches any of our keywords (case-insensitive)
-    const isKeyword = keywords.some(keyword => 
-      part.toLowerCase() === keyword.toLowerCase()
-    );
+    // Check if this part matches exact phrase or any individual keywords (case-insensitive)
+    const partLower = part.toLowerCase();
+    const isExactPhrase = exactPhrase.includes(' ') && partLower === exactPhrase;
+    const isKeyword = keywords.some(keyword => partLower === keyword);
 
-    if (isKeyword) {
+    if (isExactPhrase || isKeyword) {
       return <mark key={index} className={styles['keyword-highlight']}>{part}</mark>;
     }
     return <React.Fragment key={index}>{part}</React.Fragment>;
