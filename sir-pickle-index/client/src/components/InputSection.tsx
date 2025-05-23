@@ -1,5 +1,5 @@
 // src/components/InputSection.tsx
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, useRef, memo } from 'react';
 import styles from './InputSection.module.css';
 import FilterDropdown, { type FilterOption } from './FilterDropdown';
 
@@ -21,12 +21,12 @@ interface InputSectionProps {
 // Default filter options - these would typically come from an API call
 const DEFAULT_FILTER_OPTIONS: FilterOption[] = [
   { value: '', label: 'All Content' },
-  { value: 'youtube-videos', label: 'YouTube Videos', count: 120 },
-  { value: 'youtube-livestreams', label: 'YouTube Livestreams', count: 45 },
-  { value: 'discord-livestreams', label: 'Discord Livestreams', count: 28 },
+  { value: 'youtube-videos', label: 'YouTube Videos' },
+  { value: 'youtube-livestreams', label: 'YouTube Livestreams'},
+  { value: 'discord-livestreams', label: 'Discord Livestreams'},
 ];
 
-const InputSection: React.FC<InputSectionProps> = ({ 
+const InputSection: React.FC<InputSectionProps> = memo(({ 
   onSearch, 
   isLoading, 
   filterOptions = DEFAULT_FILTER_OPTIONS,
@@ -36,8 +36,9 @@ const InputSection: React.FC<InputSectionProps> = ({
   const [query, setQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState(''); // Empty string means "All Content"
   const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<number | null>(null);
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     if (query.trim() && !isLoading) {
       const searchParams: SearchParams = {
         query: query.trim(),
@@ -51,32 +52,57 @@ const InputSection: React.FC<InputSectionProps> = ({
 
       onSearch(searchParams);
     }
-  };
+  }, [query, searchMode, selectedFilter, isLoading, onSearch]);
 
-  const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyPress = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       handleSearch();
     }
-  };
+  }, [handleSearch]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value);
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setQuery(newValue);
     setIsTyping(true);
     
-    // Clear typing state after user stops typing
-    setTimeout(() => setIsTyping(false), 1000);
-  };
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Set new timeout - optimized for faster response
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+    }, 600); // Reduced from 1000ms to 600ms for snappier feel
+  }, []);
 
-  const handleModeChange = (mode: SearchMode) => {
+  const handleModeChange = useCallback((mode: SearchMode) => {
     setSearchMode(mode);
-    // Reset filter when switching modes
+    // Reset query input and filter when switching modes
+    setQuery('');
     if (mode === 'ask') {
       setSelectedFilter('');
     }
-    if (onModeChange) {
-      onModeChange(mode);
-    }
-  };
+    onModeChange?.(mode);
+  }, [onModeChange]);
+
+  const handleFilterChange = useCallback((filter: string) => {
+    setSelectedFilter(filter);
+  }, []);
+
+  // Memoize placeholder text
+  const placeholderText = useMemo(() => 
+    searchMode === 'ask'
+      ? 'Ask Sir Pickle AI anything...'
+      : 'Search keywords...',
+    [searchMode]
+  );
+
+  // Memoize search icon classes
+  const searchIconClasses = useMemo(() =>
+    `${styles['search-icon-span']} ${isTyping ? styles['search-icon-typing'] : ''}`,
+    [isTyping]
+  );
 
   return (
     <div className={styles['input-section-container']}>
@@ -100,18 +126,14 @@ const InputSection: React.FC<InputSectionProps> = ({
       <div className={styles['search-container']}>
         <div className={styles['input-area-container']}>
           {/* Search Icon */}
-          <span className={`${styles['search-icon-span']} ${isTyping ? styles['search-icon-typing'] : ''}`}>
+          <span className={searchIconClasses}>
             🔍
           </span>
           
           <input
             type="text"
             className={styles['input-field-element']}
-            placeholder={
-              searchMode === 'ask'
-                ? 'Ask Sir Pickle AI anything...'
-                : 'Search keywords...'
-            }
+            placeholder={placeholderText}
             value={query}
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
@@ -124,7 +146,7 @@ const InputSection: React.FC<InputSectionProps> = ({
           <div className={styles['filter-container']}>
             <FilterDropdown
               selectedFilter={selectedFilter}
-              onFilterChange={setSelectedFilter}
+              onFilterChange={handleFilterChange}
               options={filterOptions}
               isLoading={isLoading}
               disabled={isLoading}
@@ -134,6 +156,8 @@ const InputSection: React.FC<InputSectionProps> = ({
       </div>
     </div>
   );
-};
+});
+
+InputSection.displayName = 'InputSection';
 
 export default InputSection;

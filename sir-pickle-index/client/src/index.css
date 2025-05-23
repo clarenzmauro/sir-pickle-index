@@ -19,6 +19,11 @@
   --button-bg-dark: #3a3a3a;
   --button-text-dark: #ffffff;
   --button-active-bg-dark: #555555;
+
+  /* Performance optimizations */
+  --transition-theme: 0.15s ease-out;
+  --transition-fast: 0.1s ease-out;
+  --transition-medium: 0.2s ease-out;
 }
 
 html[data-theme='light'] {
@@ -52,10 +57,38 @@ body {
   font-weight: 400;
   background-color: var(--background-color);
   color: var(--text-color);
-  transition: background-color 0.3s, color 0.3s;
+  /* Optimized transitions for faster theme switching */
+  transition: background-color var(--transition-theme), color var(--transition-theme);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center; /* Center content horizontally */
+  
+  /* Performance optimizations */
+  contain: layout style paint;
+  will-change: background-color, color;
 }
+
+/* Global performance optimizations */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Optimize transform and opacity changes */
+[style*="transform"],
+[style*="opacity"] {
+  will-change: transform, opacity;
+}
+
+/* Optimize theme transitions for all elements */
+*:not(.no-transition) {
+  transition: 
+    background-color var(--transition-theme),
+    color var(--transition-theme),
+    border-color var(--transition-theme),
+    box-shadow var(--transition-theme);
+}
+
 /* Add more global styles or resets if needed */

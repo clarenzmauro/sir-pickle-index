@@ -3,7 +3,7 @@
 // Dropdown component for filtering keyword search results by category/tags
 // Provides "All Content" option and dynamically populated filter options
 //
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react';
 import styles from './FilterDropdown.module.css';
 
 export interface FilterOption {
@@ -20,7 +20,7 @@ interface FilterDropdownProps {
   disabled?: boolean;
 }
 
-const FilterDropdown: React.FC<FilterDropdownProps> = ({
+const FilterDropdown: React.FC<FilterDropdownProps> = memo(({
   selectedFilter,
   onFilterChange,
   options,
@@ -44,51 +44,105 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
     };
   }, []);
 
-  const handleSelect = (value: string) => {
+  const handleSelect = useCallback((value: string) => {
     onFilterChange(value);
     setIsOpen(false);
-  };
+  }, [onFilterChange]);
 
-  const selectedOption = options.find(option => option.value === selectedFilter);
-  const displayLabel = selectedOption?.label || 'All Content';
+  const handleToggle = useCallback(() => {
+    if (!disabled && !isLoading) {
+      setIsOpen(prev => !prev);
+    }
+  }, [disabled, isLoading]);
+
+  // Memoize expensive computations
+  const selectedOption = useMemo(() => 
+    options.find(option => option.value === selectedFilter),
+    [options, selectedFilter]
+  );
+
+  const displayLabel = useMemo(() => 
+    selectedOption?.label || 'All Content',
+    [selectedOption]
+  );
+
+  const dropdownButtonClasses = useMemo(() =>
+    `${styles['dropdown-button']} ${isOpen ? styles['dropdown-button-open'] : ''}`,
+    [isOpen]
+  );
+
+  const dropdownArrowClasses = useMemo(() =>
+    `${styles['dropdown-arrow']} ${isOpen ? styles['dropdown-arrow-up'] : ''}`,
+    [isOpen]
+  );
+
+  const shouldShowMenu = useMemo(() =>
+    isOpen && !disabled && !isLoading,
+    [isOpen, disabled, isLoading]
+  );
 
   return (
     <div className={styles['filter-dropdown']} ref={dropdownRef}>
       <button
-        className={`${styles['dropdown-button']} ${isOpen ? styles['dropdown-button-open'] : ''}`}
-        onClick={() => !disabled && !isLoading && setIsOpen(!isOpen)}
+        className={dropdownButtonClasses}
+        onClick={handleToggle}
         disabled={disabled || isLoading}
         type="button"
       >
         <span className={styles['dropdown-label']}>
           {isLoading ? 'Loading...' : displayLabel}
         </span>
-        <span className={`${styles['dropdown-arrow']} ${isOpen ? styles['dropdown-arrow-up'] : ''}`}>
+        <span className={dropdownArrowClasses}>
           ▼
         </span>
       </button>
 
-      {isOpen && !disabled && !isLoading && (
+      {shouldShowMenu && (
         <div className={styles['dropdown-menu']}>
           {options.map((option) => (
-            <button
+            <FilterDropdownItem
               key={option.value}
-              className={`${styles['dropdown-item']} ${
-                option.value === selectedFilter ? styles['dropdown-item-selected'] : ''
-              }`}
-              onClick={() => handleSelect(option.value)}
-              type="button"
-            >
-              <span className={styles['option-label']}>{option.label}</span>
-              {option.count !== undefined && (
-                <span className={styles['option-count']}>({option.count})</span>
-              )}
-            </button>
+              option={option}
+              isSelected={option.value === selectedFilter}
+              onSelect={handleSelect}
+            />
           ))}
         </div>
       )}
     </div>
   );
-};
+});
+
+// Optimized dropdown item component
+const FilterDropdownItem: React.FC<{
+  option: FilterOption;
+  isSelected: boolean;
+  onSelect: (value: string) => void;
+}> = memo(({ option, isSelected, onSelect }) => {
+  const handleClick = useCallback(() => {
+    onSelect(option.value);
+  }, [onSelect, option.value]);
+
+  const itemClasses = useMemo(() =>
+    `${styles['dropdown-item']} ${isSelected ? styles['dropdown-item-selected'] : ''}`,
+    [isSelected]
+  );
+
+  return (
+    <button
+      className={itemClasses}
+      onClick={handleClick}
+      type="button"
+    >
+      <span className={styles['option-label']}>{option.label}</span>
+      {option.count !== undefined && (
+        <span className={styles['option-count']}>({option.count})</span>
+      )}
+    </button>
+  );
+});
+
+FilterDropdown.displayName = 'FilterDropdown';
+FilterDropdownItem.displayName = 'FilterDropdownItem';
 
 export default FilterDropdown; 

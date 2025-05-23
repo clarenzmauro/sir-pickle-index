@@ -1,5 +1,5 @@
 // src/App.tsx
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import './App.css';
 import { useTheme } from './contexts/ThemeContext';
 import InputSection, { type SearchParams } from './components/InputSection';
@@ -72,23 +72,23 @@ function App() {
     }
   }, []);
 
-  const handlePromptClick = (prompt: string, mode: SearchMode) => {
+  const handlePromptClick = useCallback((prompt: string, mode: SearchMode) => {
     console.log(`Example prompt clicked: "${prompt}" in mode: ${mode}`);
     const searchParams: SearchParams = {
       query: prompt,
       mode: mode,
     };
     handleSearch(searchParams);
-  };
+  }, [handleSearch]);
 
-  const handleKeywordClick = (keyword: string) => {
+  const handleKeywordClick = useCallback((keyword: string) => {
     console.log(`Example keyword clicked: "${keyword}"`);
     const searchParams: SearchParams = {
       query: keyword,
       mode: 'keyword',
     };
     handleSearch(searchParams);
-  };
+  }, [handleSearch]);
 
   const handleModeChange = useCallback((newMode: SearchMode) => {
     // Clear results, error, and current query when switching modes
@@ -98,27 +98,44 @@ function App() {
     setCurrentSearchMode(newMode);
   }, []);
 
-  const handleAuthSuccess = () => {
+  const handleAuthSuccess = useCallback(() => {
     setIsAuthenticated(true);
     setShowAdminAuth(false);
-  };
+  }, []);
 
-  const handleAuthCancel = () => {
+  const handleAuthCancel = useCallback(() => {
     setShowAdminAuth(false);
     // Remove admin parameter from URL
     const url = new URL(window.location.href);
     url.searchParams.delete('admin');
     window.history.replaceState({}, '', url.toString());
-  };
+  }, []);
 
-  const handleAdminExit = () => {
+  const handleAdminExit = useCallback(() => {
     setIsAuthenticated(false);
     setShowAdminAuth(false);
     // Remove admin parameter from URL
     const url = new URL(window.location.href);
     url.searchParams.delete('admin');
     window.history.replaceState({}, '', url.toString());
-  };
+  }, []);
+
+  // Memoize expensive computations
+  const shouldShowExamples = useMemo(() => 
+    !results && !isLoading && !error, 
+    [results, isLoading, error]
+  );
+
+  const shouldShowResults = useMemo(() => 
+    !!(results || isLoading || error), 
+    [results, isLoading, error]
+  );
+
+  // Memoize theme button content
+  const themeButtonContent = useMemo(() => 
+    theme === 'light' ? '🌙 Dark' : '☀️ Light',
+    [theme]
+  );
 
   // Show authentication modal if admin access is requested but not authenticated
   if (showAdminAuth && !isAuthenticated) {
@@ -139,7 +156,7 @@ function App() {
               ← Back to Main
             </button>
             <button onClick={toggleTheme} className="theme-toggle-button">
-              {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
+              {themeButtonContent}
             </button>
           </div>
         </header>
@@ -157,7 +174,7 @@ function App() {
         <h1>Sir Pickle Index</h1>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button onClick={toggleTheme} className="theme-toggle-button">
-            {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
+            {themeButtonContent}
           </button>
         </div>
       </header>
@@ -180,7 +197,7 @@ function App() {
           onModeChange={handleModeChange}
         />
         
-        {!results && !isLoading && !error && (
+        {shouldShowExamples && (
           <>
             {currentSearchMode === 'ask' ? (
               <ExamplePrompts onPromptClick={handlePromptClick} isLoading={isLoading} />
@@ -190,7 +207,7 @@ function App() {
           </>
         )}
         
-        {(results || isLoading || error) && (
+        {shouldShowResults && (
           <ResultsDisplay
             searchMode={currentSearchMode}
             results={results}

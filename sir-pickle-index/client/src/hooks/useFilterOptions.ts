@@ -14,9 +14,9 @@ const fetchFilterOptions = async (): Promise<FilterOption[]> => {
   // Mock data that would come from backend
   return [
     { value: '', label: 'All Content' },
-    { value: 'youtube-videos', label: 'YouTube Videos', count: 120 },
-    { value: 'youtube-livestreams', label: 'YouTube Livestreams', count: 45 },
-    { value: 'discord-livestreams', label: 'Discord Livestreams', count: 28 },
+    { value: 'youtube-videos', label: 'YouTube Videos'},
+    { value: 'youtube-livestreams', label: 'YouTube Livestreams'},
+    { value: 'discord-livestreams', label: 'Discord Livestreams'},
   ];
 };
 

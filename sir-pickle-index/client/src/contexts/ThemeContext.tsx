@@ -1,5 +1,6 @@
 // src/contexts/ThemeContext.tsx
-import { createContext, useState, useContext, useEffect, type ReactNode } from 'react';
+import { createContext, useState, useContext, useEffect, type ReactNode, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 
 type Theme = 'light' | 'dark';
 
@@ -21,9 +22,12 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('sir-pickle-ai-theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
-  };
+  const toggleTheme = useCallback(() => {
+    // Use flushSync to ensure immediate DOM update for instant theme switching
+    flushSync(() => {
+      setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+    });
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

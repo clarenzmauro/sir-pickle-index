@@ -5,6 +5,8 @@
   margin: 0 auto;
   padding: 20px;
   box-sizing: border-box;
+  /* Performance optimizations */
+  contain: layout style;
 }
 
 .app-header {
@@ -12,14 +14,18 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  /* Performance optimization */
+  contain: layout;
 }
 
 .app-header h1 {
   font-size: 2em; /* Adjust as per design */
   margin: 0;
+  color: var(--text-color);
+  /* Performance optimization */
+  will-change: color;
+  transition: color var(--transition-theme);
 }
-
-
 
 .theme-toggle-button {
   padding: 8px 12px;
@@ -29,21 +35,56 @@
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.9em;
+  /* Performance optimizations */
+  transform: translateZ(0); /* Hardware acceleration */
+  transition: all var(--transition-fast);
+  will-change: background-color, transform, box-shadow;
 }
 
 .theme-toggle-button:hover {
   background-color: var(--button-active-bg);
+  transform: translateZ(0) scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+.theme-toggle-button:active {
+  transform: translateZ(0) scale(0.98);
+}
+
+html[data-theme='dark'] .theme-toggle-button:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
 
 .disclaimer-banner {
   background-color: var(--disclaimer-bg); /* Use theme variable */
   color: var(--text-color); /* Use theme variable instead of hardcoded light color */
   padding: 10px 15px;
   border-radius: 8px;
-  margin-bottom: 30px;
+  margin-bottom: 40px; /* Standardized spacing - changed from 30px */
   font-size: 0.9em;
   text-align: center;
+  /* Performance optimizations */
+  transform: translateZ(0);
+  transition: all var(--transition-theme);
+  will-change: background-color, color;
+}
+
+/* Add subtle animation for main content */
+.main-content {
+  /* Performance optimization */
+  contain: layout style;
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Enhanced responsive design to match other components */
@@ -52,8 +93,18 @@
     padding: 16px;
   }
   
+  .app-header {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  
+  .app-header h1 {
+    font-size: 1.8em;
+  }
+  
   .disclaimer-banner {
-    margin-bottom: 24px;
+    margin-bottom: 32px; /* Standardized tablet spacing - changed from 24px */
     padding: 8px 12px;
     font-size: 0.85em;
   }
@@ -64,9 +115,48 @@
     padding: 12px;
   }
   
+  .app-header h1 {
+    font-size: 1.6em;
+  }
+  
+  .theme-toggle-button {
+    padding: 6px 10px;
+    font-size: 0.85em;
+  }
+  
   .disclaimer-banner {
-    margin-bottom: 20px;
+    margin-bottom: 24px; /* Standardized mobile spacing - changed from 20px */
     padding: 6px 10px;
     font-size: 0.8em;
   }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle-button,
+  .disclaimer-banner,
+  .main-content {
+    animation: none;
+    transition: none;
+    transform: none !important;
+  }
+}
+
+/* Preload optimization for theme switching */
+.theme-toggle-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--button-active-bg);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  border-radius: inherit;
+  z-index: -1;
+}
+
+.theme-toggle-button:hover::before {
+  opacity: 1;
 }
