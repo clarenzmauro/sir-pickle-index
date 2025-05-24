@@ -106,11 +106,27 @@ Okay, here is the context from Sir Pickle's videos:
 const parseLLMJsonResponse = (responseText: string): LLMResponse | null => {
     try {
         const cleanedResponseText = responseText.replace(/^```json\s*([\s\S]*?)\s*```$/, '$1').trim();
-        const parsed = JSON.parse(cleanedResponseText);
-        if (parsed && parsed.structuredAnswer && parsed.citations) {
-            return parsed;
+        let parsed = JSON.parse(cleanedResponseText);
+
+        // Check if parsed itself is the full response (e.g. from OpenRouter an Azure OpenAI which might return the whole thing directly)
+        // And also handle the case where Gemma might incorrectly nest citations
+        let finalStructuredAnswer = parsed.structuredAnswer;
+        let finalCitations = parsed.citations;
+
+        if (finalStructuredAnswer && finalStructuredAnswer.citations && !finalCitations) {
+            console.warn('[LLMService] Found citations nested under structuredAnswer. Attempting to correct.');
+            finalCitations = finalStructuredAnswer.citations;
+            // Optionally, remove it from structuredAnswer if your downstream code doesn't expect it there
+            // delete finalStructuredAnswer.citations; 
+            // For now, let's assume it's okay to leave it there if the top-level one is also populated.
         }
-        console.error('[LLMService] Parsed JSON from LLM is missing expected keys.');
+
+        if (finalStructuredAnswer && finalCitations) {
+            return { structuredAnswer: finalStructuredAnswer, citations: finalCitations };
+        }
+
+        console.error('[LLMService] Parsed JSON from LLM is missing expected top-level keys (structuredAnswer or citations) even after attempting to correct for nesting.');
+        console.log('[LLMService] Original parsed object:', parsed); 
         return null;
     } catch (parseError) {
         console.error('[LLMService] Failed to parse JSON from LLM API Response:', parseError);
