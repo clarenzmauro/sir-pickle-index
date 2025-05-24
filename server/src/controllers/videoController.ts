@@ -246,7 +246,7 @@ export const askQuestion = async (
     res: Response,
     next: NextFunction
   ): Promise<void> => {
-    const startTime = Date.now();
+    const overallStartTime = Date.now(); // Renamed for clarity
     try {
       const { question } = req.body;
   
@@ -256,13 +256,17 @@ export const askQuestion = async (
       }
   
       // 1. Generate embedding for the user's question
+      console.time('[Timing] generateQueryEmbedding');
       const queryEmbedding = await generateQueryEmbedding(question);
+      console.timeEnd('[Timing] generateQueryEmbedding');
+
       if (!queryEmbedding) {
         res.status(500).json({ message: 'Failed to generate embedding for the question.' });
         return;
       }
   
       // 2. Perform Vector Search on `videochunks` collection
+      console.time('[Timing] vectorSearch');
       const relevantChunks = await VideoChunk.aggregate([
         {
           $vectorSearch: {
@@ -306,6 +310,7 @@ export const askQuestion = async (
             }
         }
       ]).exec();
+      console.timeEnd('[Timing] vectorSearch');
 
       if (!relevantChunks || relevantChunks.length === 0) {
         res.status(404).json({ message: 'Could not find relevant context for your question using vector search.' });
@@ -347,7 +352,9 @@ export const askQuestion = async (
       }
   
       // 4. Call the abstracted LLM service
+      console.time('[Timing] generateAnswer LLM call');
       const llmResponsePayload = await generateAnswer(question, contextSegmentsForLLM);
+      console.timeEnd('[Timing] generateAnswer LLM call');
 
       if (!llmResponsePayload || !llmResponsePayload.structuredAnswer || !llmResponsePayload.citations) {
         // Handle case where LLM call failed or returned unexpected/null structure
@@ -373,7 +380,7 @@ export const askQuestion = async (
       const processedAnswer = processAnswerWithCitations(llmResponsePayload.structuredAnswer, finalCitations);
   
       const finalResponse = {
-        answerTimeMs: Date.now() - startTime,
+        answerTimeMs: Date.now() - overallStartTime, // Use overallStartTime
         structuredAnswer: llmResponsePayload.structuredAnswer,
         processedAnswer: processedAnswer, // Add structured answer with clickable citation data
         citations: finalCitations,
